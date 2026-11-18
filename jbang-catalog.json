@@ -1,0 +1,10 @@
+{
+  "catalogs": {},
+  "aliases": {
+    "spring": {
+      "script-ref": "spring.java",
+      "description": "Embabel for Spring (experimental): the Embabel appliance as a plain Java process on port 7042, with the realms that trace a production failure to the line, the commit, its author and the pull request."
+    }
+  },
+  "templates": {}
+}
