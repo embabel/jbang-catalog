@@ -28,6 +28,11 @@ It listens on `127.0.0.1:7042` only.
 |---|---|---|
 | `--port <n>` | `EMBABEL_PORT` | `7042` |
 | `--data <folder>` | `EMBABEL_DATA_DIR` | `~/.embabel/spring` |
+| `--world <git URL or owner/repo>` | `EMBABEL_WORLD` | `embabel-worlds/world-spring-starter` |
+
+`--world` starts a new world from another repository. It applies only when the data folder has no
+world yet, so give a different world its own `--data` folder. Worlds whose realms run handlers, read
+documents or use the code sandbox need pieces the Docker appliance carries and this does not.
 
 For private repositories, set `GH_TOKEN` before starting.
 

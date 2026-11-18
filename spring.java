@@ -24,9 +24,9 @@ import java.util.List;
  * It downloads the stock appliance jar once, makes a data folder with a user and an MCP token, and
  * starts the appliance on localhost. Nothing is installed anywhere else.
  *
- *   jbang spring@embabel [--port 7042] [--data <folder>]
+ *   jbang spring@embabel [--port 7042] [--data <folder>] [--world <git URL or owner/repo>]
  *
- * EMBABEL_PORT and EMBABEL_DATA_DIR do the same as the two options.
+ * EMBABEL_PORT, EMBABEL_DATA_DIR and EMBABEL_WORLD do the same as the three options.
  */
 public class spring {
 
@@ -48,6 +48,10 @@ public class spring {
         Path data = Path.of(option(args, "--data", System.getenv("EMBABEL_DATA_DIR"),
                 Path.of(System.getProperty("user.home"), ".embabel", "spring").toString())).toAbsolutePath();
 
+        String world = worldUrl(option(args, "--world", System.getenv("EMBABEL_WORLD"), STARTER_WORLD));
+        /* The world is cloned only when the data folder has none: one that is already there is used as it is. */
+        boolean existing = Files.isDirectory(data.resolve("embabel/assistant/users").resolve(USER));
+
         requireFree(port);
         Path app = Files.createDirectories(data.resolve("app").resolve(BUILD));
         Path plugins = Files.createDirectories(app.resolve("plugins"));
@@ -68,13 +72,17 @@ public class spring {
         ProcessBuilder builder = new ProcessBuilder(command).directory(run.toFile()).inheritIO();
         builder.environment().put("SERVER_PORT", String.valueOf(port));
         builder.environment().put("EMBABEL_MODE", "worlds");
-        builder.environment().put("ASSISTANT_BOOTSTRAP_WORLD", STARTER_WORLD);
+        builder.environment().put("ASSISTANT_BOOTSTRAP_WORLD", world);
         builder.environment().put("ASSISTANT_INFRASTRUCTURE_MCP_DEVELOPER_ENDPOINT_ENABLED", "true");
         builder.environment().put("ASSISTANT_INFRASTRUCTURE_MCP_DEFAULT_MODE", "DEVELOPER");
 
         System.out.println();
         System.out.println("Embabel for Spring (experimental), appliance build " + BUILD);
         System.out.println("  Data in      " + data);
+        System.out.println("  World        " + (existing ? "the one already in the data folder" : "new, from " + world));
+        if (existing && !world.equals(STARTER_WORLD)) {
+            System.out.println("               --world is ignored: this data folder has a world. Use another --data folder to start one from " + world);
+        }
         System.out.println("  Console      http://127.0.0.1:" + port + "/ui/");
         System.out.println("  MCP          http://127.0.0.1:" + port + "/mcp/code");
         System.out.println("  MCP token    " + token);
@@ -94,6 +102,16 @@ public class spring {
             if (args[i].equals(name)) return args[i + 1];
         }
         return fromEnvironment != null && !fromEnvironment.isBlank() ? fromEnvironment : otherwise;
+    }
+
+    /* A world as a git URL: a full URL as given, `owner/repo` on GitHub. */
+    static String worldUrl(String given) {
+        String world = given.trim();
+        if (world.contains("://") || world.startsWith("git@")) return world;
+        if (world.matches("[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")) return "https://github.com/" + world.replaceFirst("\\.git$", "") + ".git";
+        System.err.println("--world takes a git URL or owner/repo, and was given '" + given + "'.");
+        System.exit(2);
+        return world;
     }
 
     static void requireFree(int port) {
